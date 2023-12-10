@@ -53,6 +53,7 @@ class MyPromise {
       executor(this._resolve.bind(this), this._reject.bind(this));
     } catch (e) {
       this._reject(e);
+      console.log(e);
     }
   }
 
@@ -112,6 +113,7 @@ class MyPromise {
         }
       } catch (err) {
         reject(this._value);
+        console.log(err);
       }
     });
   }
@@ -226,35 +228,88 @@ class MyPromise {
    */
   static all(proms) {
     return new MyPromise((resolve, reject) => {
-      const result = [];
-      let count = 0;
-      let fulfilledCount = 0;
-      for (const p of proms) {
-        let i = count;
-        count++;
-        MyPromise.resolve(p).then((data) => {
-          fulfilledCount++;
-          result[i] = data;
-          if (count === fulfilledCount) {
+      try {
+        const result = [];
+        let count = 0;
+        let fulfilledCount = 0;
+        for (const p of proms) {
+          let i = count;
+          count++;
+          MyPromise.resolve(p).then((data) => {
+            fulfilledCount++;
+            result[i] = data;
+            if (count === fulfilledCount) {
+              resolve(result);
+            }
+          }, reject);
+          if (count === 0) {
             resolve(result);
           }
-        }, reject);
+        }
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  /**
+   * 等待所有的Promise有结果之后
+   * 该方法返回的Promise完成
+   * 并且按照顺序将所有结果汇总
+   * @param {iterator} proms
+   */
+  static allSettled(proms) {
+    const ps = [];
+    for (const p of proms) {
+      ps.push(
+        MyPromise.resolve(p).then(
+          (data) => ({
+            status: FULFILLED,
+            data
+          }),
+          (reason) => ({
+            status: REJECTED,
+            reason
+          })
+        )
+      );
+    }
+    return MyPromise.all(ps);
+  }
+
+  /**
+   * 返回的Promise与第一个有结果的一致
+   * @param {iterator} proms
+   */
+  static race(proms) {
+    return new MyPromise((resolve, reject) => {
+      for (const p of proms) {
+        MyPromise.resolve(p).then(resolve, reject);
       }
     });
   }
 }
 
 const p1 = new MyPromise((resolve, reject) => {
-  // const a = "";
-  // a = 44;
-  resolve(1);
+  setTimeout(() => {
+    reject(4);
+  }, 1000);
 });
 const p2 = new MyPromise((resolve, reject) => {
-  resolve(2);
+  setTimeout(() => {
+    resolve(2);
+  }, 5000);
 });
 const p3 = new MyPromise((resolve, reject) => {
-  resolve(3);
+  setTimeout(() => {
+    resolve(3);
+  }, 2000);
 });
-MyPromise.all([p1, p2, p3, 4]).then((data) => {
-  console.log(data);
-});
+MyPromise.race([p1, p2, p3]).then(
+  (data) => {
+    console.log(data);
+  },
+  (reason) => {
+    console.log(reason);
+  }
+);
