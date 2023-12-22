@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <style>
+    div {
+      width: 100px;
+      height: 100px;
+      border-radius: 4px;
+      background-color: red;
+      transition: 0.5s;
+    }
+    div:hover {
+      transform: scale(1.5);
+      border-radius: 50%;
+    }
+  </style>
+  <body>
+    <div></div>
+  </body>
+  <script>
+    /*
+      解决transitionend多次触发的问题
+    */
+    const div = document.querySelector("div");
+    // 1. 让对应的回调只执行一次
+    // div.addEventListener(
+    //   "transitionend",
+    //   () => {
+    //     console.log("ttransitionend");
+    //   },
+    //   {
+    //     once: true
+    //   }
+    // );
+
+    // 使用防抖让 进出 都执行一次
+    function debounce(fn, delay = 100) {
+      let timer = null;
+      return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          fn.apply(this, args);
+        }, delay);
+      };
+    }
+    div.addEventListener(
+      "transitionend",
+      debounce(() => {
+        console.log("transitionend");
+      }, 20)
+    );
+  </script>
+</html>
